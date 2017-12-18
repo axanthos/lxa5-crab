@@ -5,11 +5,12 @@ import collections
 import time
 import re
 import textwrap
+import itertools
 
 # Py 2+3 compatibility imports...
 from io import open
 
-__version__ = "0.03"
+__version__ = "0.04"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
@@ -49,12 +50,7 @@ def main():
         print("Couldn't read file ", INPUT_FILE)
         return
 
-    # Compute and report execution time...
-    exec_time = time.time() - start_time
-    print(
-        "%i word types processed in %.2f secs" 
-        % (len(word_counts), exec_time)
-    )
+    report(start_time, word_counts, signatures)
 
 def find_signatures(word_counts):
     """Find signatures (based on Goldsmith's Lxa-Crab algorithm)"""
@@ -85,7 +81,7 @@ def find_signatures(word_counts):
     known_suffixes = set()
     for suffixes in signatures:
         known_suffixes = known_suffixes.union(suffixes)
-    
+
     # Second generation tentative signatures are parasignatures stripped
     # from unknown suffixes and having at least 2 continuations...
     tentative_signatures = collections.defaultdict(set)
@@ -93,14 +89,14 @@ def find_signatures(word_counts):
         good_conts = sorted(c for c in continuations if c in known_suffixes)
         if len(good_conts) > 1:
             tentative_signatures[tuple(good_conts)].add(next(iter(protostems)))
-    
+
     # Add those tentative signatures which occur with at least 2 stems...
     single_stem_sigs = collections.defaultdict(set)
     for continuations, protostems in tentative_signatures.items():
         container = signatures if len(protostems) > 1 else single_stem_sigs
         container[continuations] = container[continuations].union(protostems)
-        
-    # Add each stem in remaining tentative signatures to the existing 
+
+    # Add each stem in remaining tentative signatures to the existing
     # signature that contains the largest number of its continuations...
     sorted_signatures = sorted(signatures, key=len, reverse=True)
     for continuations, protostems in single_stem_sigs.items():
@@ -109,7 +105,7 @@ def find_signatures(word_counts):
             if set(suffixes).issubset(continuation_set):
                 signatures[suffixes].add(next(iter(protostems)))
                 break
-    
+
     # Get list of known stems from signatures...
     known_stems = set()
     for stems in signatures.values():
@@ -149,6 +145,31 @@ def serialize_signatures(signatures):
         output += "=" * 80 + "\n\n"
         signature_num += 1
     return output
+
+def report(start_time, word_counts, signatures):
+    """Report execution time and coverage"""
+
+    # Compute and report execution time...
+    exec_time = time.time() - start_time
+    print(
+        "%i word types processed in %.2f secs"
+        % (len(word_counts), exec_time)
+    )
+
+    # Compute and report coverage...
+    covered = collections.Counter()
+    for suffixes, stems in signatures.items():
+        covered.update(st+su for su, st in itertools.product(suffixes, stems))
+    spectrum = collections.Counter(covered.values())
+    for frequency in sorted(spectrum):
+        print(
+            "%i type(s) (%.2f%%) have been assigned to %i signature(s)" % (
+                spectrum[frequency],
+                100 * spectrum[frequency] / len(word_counts),
+                frequency
+            )
+        )
+
 
 if __name__ == "__main__":
     main()
