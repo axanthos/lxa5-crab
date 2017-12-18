@@ -9,7 +9,7 @@ import textwrap
 # Py 2+3 compatibility imports...
 from io import open
 
-__version__ = "0.02"
+__version__ = "0.03"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
@@ -84,20 +84,28 @@ def find_signatures(word_counts):
         known_suffixes = known_suffixes.union(suffixes)
     
     # Second generation tentative signatures are parasignatures stripped
-    # from unknown suffixes and having at least 1 non-empty continuation...
+    # from unknown suffixes and having at least 2 continuations...
     tentative_signatures = collections.defaultdict(set)
     for continuations, protostems in parasignatures.items():
         good_conts = sorted(c for c in continuations if c in known_suffixes)
-        protostem = next(iter(protostems))
-        if len(good_conts) and good_conts != [""]: # AX=>JG: Should len be > 1?
-            tentative_signatures[tuple(good_conts)].add(protostem)
+        if len(good_conts) > 1:
+            tentative_signatures[tuple(good_conts)].add(next(iter(protostems)))
     
-    # Add those tentative signatures which are identical to a known signature
-    # or which occur with at least 2 different stems...
+    # Add those tentative signatures which occur with at least 2 stems...
+    single_stem_sigs = collections.defaultdict(set)
     for continuations, protostems in tentative_signatures.items():
-        if continuations in signatures or len(protostems) > 1:
-            signatures[continuations] =     \
-                signatures[continuations].union(protostems)
+        container = signatures if len(protostems) > 1 else single_stem_sigs
+        container[continuations] = container[continuations].union(protostems)
+        
+    # Add each stem in remaining tentative signatures to the existing 
+    # signature that contains the largest number of its continuations...
+    sorted_signatures = sorted(signatures, key=len, reverse=True)
+    for continuations, protostems in single_stem_sigs.items():
+        continuation_set = set(continuations)
+        for suffixes in sorted_signatures:
+            if set(suffixes).issubset(continuation_set):
+                signatures[suffixes].add(next(iter(protostems)))
+                break
     
     # Get list of known stems from signatures...
     known_stems = set()
