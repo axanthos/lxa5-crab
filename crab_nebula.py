@@ -9,13 +9,13 @@ import textwrap
 # Py 2+3 compatibility imports...
 from io import open
 
-__version__ = "0.01"
+__version__ = "0.02"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
 
 # Parameters...
-INPUT_FILE = "germinal.txt"
+INPUT_FILE = "LICENSE"
 OUTPUT_FILE = "signatures.txt"
 ENCODING = "utf-8"
 MIN_STEM_LEN = 3
@@ -38,7 +38,7 @@ def main():
     word_counts = collections.Counter(words)
 
     # Learn their morphology
-    signatures = find_signatures(word_counts)
+    signatures, stems, suffixes = find_signatures(word_counts)
 
     # Open output file and write signatures to it...
     try:
@@ -67,12 +67,44 @@ def find_signatures(word_counts):
                 continuations[protostem].append(word[len(protostem):])
 
     # Find all stems associated with each continuation list...
-    protostem_lists = collections.defaultdict(list)
+    protostem_lists = collections.defaultdict(set)
     for protostem, continuation in continuations.items():
-        protostem_lists[tuple(sorted(continuation))].append(protostem)
+        protostem_lists[tuple(sorted(continuation))].add(protostem)
 
-    # Return signatures (i.e. continuation lists with more than 1 stem).
-    return dict([(c, p) for c, p in protostem_lists.items() if len(p) > 1])
+    # Signatures are continuation lists with more than 1 stem...
+    signatures = collections.defaultdict(set)
+    parasignatures = dict()
+    for continuations, protostems in protostem_lists.items():
+        container = signatures if len(protostems) > 1 else parasignatures
+        container[continuations] = protostems
+
+    # Get list of known suffixes from signatures...
+    known_suffixes = set()
+    for suffixes in signatures:
+        known_suffixes = known_suffixes.union(suffixes)
+    
+    # Second generation tentative signatures are parasignatures stripped
+    # from unknown suffixes and having at least 1 non-empty continuation...
+    tentative_signatures = collections.defaultdict(set)
+    for continuations, protostems in parasignatures.items():
+        good_conts = sorted(c for c in continuations if c in known_suffixes)
+        protostem = next(iter(protostems))
+        if len(good_conts) and good_conts != [""]: # AX=>JG: Should len be > 1?
+            tentative_signatures[tuple(good_conts)].add(protostem)
+    
+    # Add those tentative signatures which are identical to a known signature
+    # or which occur with at least 2 different stems...
+    for continuations, protostems in tentative_signatures.items():
+        if continuations in signatures or len(protostems) > 1:
+            signatures[continuations] =     \
+                signatures[continuations].union(protostems)
+    
+    # Get list of known stems from signatures...
+    known_stems = set()
+    for stems in signatures.values():
+        known_stems = known_stems.union(stems)
+
+    return signatures, stems, suffixes
 
 def find_protostems(word_counts):
     """Find potential stems"""
