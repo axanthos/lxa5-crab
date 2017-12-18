@@ -51,7 +51,10 @@ def main():
 
     # Compute and report execution time...
     exec_time = time.time() - start_time
-    print("%i words processed in %.2f secs" % (len(words), exec_time))
+    print(
+        "%i word types processed in %.2f secs" 
+        % (len(word_counts), exec_time)
+    )
 
 def find_signatures(word_counts):
     """Find signatures (based on Goldsmith's Lxa-Crab algorithm)"""
