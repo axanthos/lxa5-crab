@@ -10,7 +10,7 @@ import itertools
 # Py 2+3 compatibility imports...
 from io import open
 
-__version__ = "0.04"
+__version__ = "0.05"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
@@ -38,8 +38,11 @@ def main():
     words = re.findall(r'\w+(?u)', content.lower())
     word_counts = collections.Counter(words)
 
-    # Learn their morphology
+    # Learn signatures from words.
     signatures, stems, suffixes = find_signatures(word_counts)
+
+    # Build sig-tree.
+    build_sig_tree(signatures)
 
     # Open output file and write signatures to it...
     try:
@@ -127,6 +130,44 @@ def find_protostems(word_counts):
             protostems.add(protostem)
 
     return protostems
+
+def build_sig_tree(signatures):
+    """AX => JG: would you know how to document this function?"""
+    edges = list()
+
+    # Find signatures and stems associated with each word...
+    word_to_sigs = collections.defaultdict(list)
+    word_to_stems = collections.defaultdict(list)
+    for suffixes in signatures:
+        for pair in itertools.product(signatures[suffixes], suffixes):
+            word = "".join(pair)
+            word_to_sigs[word].append(suffixes)
+            word_to_stems[word].append(pair[0])
+
+    # Keep only words associated with more than 1 signature.
+    word_to_sigs = {w: s for w, s in word_to_sigs.items() if len(s) > 1}
+
+    # AX => JG: would you know how to comment this block?
+    sigs_and_morph_to_words = collections.defaultdict(set)
+    for word, sigs in word_to_sigs.items():
+        sig_pairs = list(itertools.combinations(sigs, 2))
+        stem_pairs = list(itertools.combinations(word_to_stems[word], 2))
+        for idx, sig_pair in enumerate(sig_pairs):
+            stem_pair = stem_pairs[idx]
+            morph = suffix_diff(stem_pair[0], stem_pair[1])
+            key = (morph, tuple(sorted(sig_pair)))
+            sigs_and_morph_to_words[key].add(word)
+
+    for sigs_and_morph, words in sigs_and_morph_to_words.items():
+        print(sigs_and_morph, sorted(words))
+
+def suffix_diff(str1, str2):
+    """Given 2 strings, one of which is the prefix of the other, returns
+    the 'suffix' that must be added to the former to obtain the latter.
+    """
+    len1 = len(str1)
+    len2 = len(str2)
+    return str1[len2:] if len(str1) > len(str2) else str2[len1:]
 
 def serialize_signatures(signatures):
     """Pretty-print signatures"""
