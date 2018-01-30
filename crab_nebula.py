@@ -6,11 +6,12 @@ import time
 import re
 import textwrap
 import itertools
+import math
 
 # Py 2+3 compatibility imports...
 from io import open
 
-__version__ = "0.05"
+__version__ = "0.06"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
@@ -42,7 +43,10 @@ def main():
     signatures, stems, suffixes = find_signatures(word_counts)
 
     # Build sig-tree.
-    build_sig_tree(signatures)
+    sig_tree = build_sig_tree(signatures)
+
+    # Compute entropy of final stem letter in signatures...
+    final_letter_entropy = get_final_letter_entropy(signatures)
 
     # Open output file and write signatures to it...
     try:
@@ -158,8 +162,15 @@ def build_sig_tree(signatures):
             key = (morph, tuple(sorted(sig_pair)))
             sigs_and_morph_to_words[key].add(word)
 
-    for sigs_and_morph, words in sigs_and_morph_to_words.items():
-        print(sigs_and_morph, sorted(words))
+    return sigs_and_morph_to_words
+
+def get_final_letter_entropy(signatures):
+    """Compute entropy over the distribution of final stem letter in sigs"""
+    suffix_entropy = dict()
+    for suffixes, stems in signatures.items():
+        final_letter_freq = collections.Counter(s[-1] for s in stems)
+        suffix_entropy[suffixes] = get_entropy(final_letter_freq)
+    return suffix_entropy
 
 def suffix_diff(str1, str2):
     """Given 2 strings, one of which is the prefix of the other, returns
@@ -168,6 +179,16 @@ def suffix_diff(str1, str2):
     len1 = len(str1)
     len2 = len(str2)
     return str1[len2:] if len(str1) > len(str2) else str2[len1:]
+
+def get_entropy(dictionary):
+    """Compute the entropy of a dictionary storing counts"""
+    my_sum = 0
+    weighted_sum_of_logs = 0
+    for freq in dictionary.values():
+        if freq:
+            my_sum += freq
+            weighted_sum_of_logs += freq * math.log(freq)
+    return math.log(my_sum) - weighted_sum_of_logs / my_sum
 
 def serialize_signatures(signatures):
     """Pretty-print signatures"""
