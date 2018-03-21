@@ -1,5 +1,9 @@
 """Linguistica - Crab Nebula, py 2+3 standalone implementation"""
 
+# Py 2+3 compatibility imports...
+from __future__ import division
+from io import open
+
 import os
 import collections
 import time
@@ -8,8 +12,6 @@ import textwrap
 import itertools
 import math
 
-# Py 2+3 compatibility imports...
-from io import open
 
 __version__ = "0.06"
 __author__ = "Aris Xanthos and John Goldsmith"
