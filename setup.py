@@ -4,7 +4,7 @@
 
 Copyright 2018 Aris Xanthos & John Goldsmith
 
-This file is part of the lxa5-crab python package.
+This file is part of the lxa5crab python package.
 
 lxa5-crab is free software: you can redistribute it and/or modify it under 
 the terms of the GNU General Public License as published by the Free Software 
@@ -22,19 +22,19 @@ lxa5-crab. If not, see http://www.gnu.org/licenses
 from os import path
 from setuptools import setup
 
-__version__ = "0.1"   # file version
+__version__ = "0.2"   # file version
 
-NAME = 'lxa5-crab'
+NAME = 'lxa5crab'
 
-VERSION = '0.1'  # package version
+VERSION = '0.2'  # package version
 DESCRIPTION = 'Linguistica - Crab Nebula, py 2+3 standalone implementation.'
 LONG_DESCRIPTION = open(
     path.join(path.dirname(__file__), 'README.md')
 ).read()
 AUTHOR = 'Aris Xanthos and John Goldsmith'
 AUTHOR_EMAIL = 'aris.xanthos@unil.ch'
-URL = 'https://github.com/axanthos/lxa5-crab'
-DOWNLOAD_URL = 'https://github.com/axanthos/lxa5-crab/archive/master.zip'
+URL = 'https://github.com/axanthos/lxa5crab'
+DOWNLOAD_URL = 'https://github.com/axanthos/lxa5crab/archive/master.zip'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
@@ -57,7 +57,7 @@ CLASSIFIERS = (
     'Intended Audience :: Science/Research',
 )
 
-PACKAGES = ["lxa5-crab"]
+PACKAGES = ["lxa5crab"]
 
 setup(
     name=NAME,
