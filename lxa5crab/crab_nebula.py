@@ -13,7 +13,7 @@ import itertools
 import math
 
 
-__version__ = "0.06"
+__version__ = "0.07"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
@@ -149,29 +149,42 @@ def build_parser(word_counts, signatures, stems, suffixes):
     """
     
     # Go through signatures and associate each generated word with its parses...
+    sig_num = 1
     parser = collections.defaultdict(dict)
     for suffixes in signatures:
         for pair in itertools.product(signatures[suffixes], suffixes):
             word = "".join(pair)
-            parser[word][pair] = 1
+            parser[word][pair] = sig_num
+        sig_num += 1
             
     # Go through each word in the corpus and increment stem and suffix count...
-    stem_freq = dict()
-    suffix_freq = dict()
+    stem_count = dict()
+    suffix_count = dict()
+    total_stem_count = total_suffix_count = 0
     for word, count in word_counts.items():
-        for stem, suffix in parser[word]:
-            stem_freq[stem] = stem_freq.get(stem, 0) + count
-            suffix_freq[suffix] = suffix_freq.get(suffix, 0) + count
+        if len(parser[word]):
+            for stem, suffix in parser[word]:
+                stem_count[stem] = stem_count.get(stem, 0) + count
+                suffix_count[suffix] = suffix_count.get(suffix, 0) + count
+                total_stem_count += count
+                total_suffix_count += count
+        else:
+            parser[word][word, ""] = 0
+            stem_count[word] = stem_count.get(word, 0) + count
+            suffix_count[""] = suffix_count.get("", 0) + count
+            total_stem_count += count
+            total_suffix_count += count
 
-    # Compute probability of each word parse (given this word)...
+    # Compute score of each word parse and keep only best parse...
     for word in parser:
+        scores = collections.defaultdict(dict)
         total = 0
         for stem, suffix in parser[word]:
-            score = stem_freq[stem] * suffix_freq[suffix]
-            parser[word][stem, suffix] = score
-            total += score
-        for stem, suffix in parser[word]:
-            parser[word][stem, suffix] /= total
+            score = (stem_count[stem]/total_stem_count)     \
+                  * (suffix_count[suffix]/total_suffix_count)
+            scores[word][stem, suffix] = score
+        best_parse = sorted(scores[word], key=scores[word].get)[0]
+        parser[word] = {best_parse: parser[word][best_parse]}
                         
     return parser            
 
