@@ -19,8 +19,8 @@ __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
 
 # Parameters...
-INPUT_FILE = "LICENSE"
-OUTPUT_FILE = "signatures.txt"
+INPUT_FILE = "../LICENSE"
+OUTPUT_FILE = "../signatures.txt"
 ENCODING = "utf-8"
 MIN_STEM_LEN = 3
 
@@ -43,6 +43,11 @@ def main():
 
     # Learn signatures from words.
     signatures, stems, suffixes = find_signatures(word_counts)
+    
+    # Build a parser and run it...
+    parser = build_parser(word_counts, signatures, stems, suffixes)
+    for word in word_counts:
+        print(word, parser[word])
 
     # Build sig-tree.
     sig_tree = build_sig_tree(signatures)
@@ -136,6 +141,39 @@ def find_protostems(word_counts):
             protostems.add(protostem)
 
     return protostems
+
+def build_parser(word_counts, signatures, stems, suffixes):
+    """Build a parser, i.e. a dictionary whose keys are words and whose values
+    are themselves dictionaries (whose keys are parses, i.e. (stem, suffix) 
+    tuples, and whose values are probabilities).    
+    """
+    
+    # Go through signatures and associate each generated word with its parses...
+    parser = collections.defaultdict(dict)
+    for suffixes in signatures:
+        for pair in itertools.product(signatures[suffixes], suffixes):
+            word = "".join(pair)
+            parser[word][pair] = 1
+            
+    # Go through each word in the corpus and increment stem and suffix count...
+    stem_freq = dict()
+    suffix_freq = dict()
+    for word, count in word_counts.items():
+        for stem, suffix in parser[word]:
+            stem_freq[stem] = stem_freq.get(stem, 0) + count
+            suffix_freq[suffix] = suffix_freq.get(suffix, 0) + count
+
+    # Compute probability of each word parse (given this word)...
+    for word in parser:
+        total = 0
+        for stem, suffix in parser[word]:
+            score = stem_freq[stem] * suffix_freq[suffix]
+            parser[word][stem, suffix] = score
+            total += score
+        for stem, suffix in parser[word]:
+            parser[word][stem, suffix] /= total
+                        
+    return parser            
 
 def build_sig_tree(signatures):
     """AX => JG: would you know how to document this function?"""
