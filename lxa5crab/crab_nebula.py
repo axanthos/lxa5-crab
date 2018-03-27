@@ -13,7 +13,7 @@ import itertools
 import math
 
 
-__version__ = "0.07"
+__version__ = "0.08"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
@@ -70,7 +70,7 @@ def find_signatures(word_counts):
     """Find signatures (based on Goldsmith's Lxa-Crab algorithm)"""
 
     # Find protostems.
-    protostems = find_protostems(word_counts)
+    protostems = find_protostems(word_counts)     
 
     # List all possible continuations of each protostem...
     continuations = collections.defaultdict(list)
@@ -140,6 +140,12 @@ def find_protostems(word_counts):
         if len(protostem) >= MIN_STEM_LEN:
             protostems.add(protostem)
 
+    if len(protostems) == 0:
+        message = "Unable to find any stems in data."
+        if len(word_counts) == 1:
+            message += " Please check that they are segmented into words."
+        raise ValueError(message)
+        
     return protostems
 
 def build_parser(word_counts, signatures, stems, suffixes):
