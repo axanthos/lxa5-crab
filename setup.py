@@ -22,11 +22,11 @@ lxa5-crab. If not, see http://www.gnu.org/licenses
 from os import path
 from setuptools import setup
 
-__version__ = "0.4"   # file version
+__version__ = "0.5"   # file version
 
 NAME = 'lxa5crab'
 
-VERSION = '0.4'  # package version
+VERSION = '0.5'  # package version
 DESCRIPTION = 'Linguistica - Crab Nebula, py 2+3 standalone implementation.'
 LONG_DESCRIPTION = open(
     path.join(path.dirname(__file__), 'README.md')

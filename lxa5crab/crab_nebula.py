@@ -47,7 +47,7 @@ def main():
     # Build a parser and run it...
     parser = build_parser(word_counts, signatures, stems, suffixes)
     for word in word_counts:
-        print(word, parser[word])
+        print(word, parser[word][0].stem, parser[word][0].suffix)
 
     # Build sig-tree.
     sig_tree = build_sig_tree(signatures)
@@ -148,19 +148,31 @@ def find_protostems(word_counts):
         
     return protostems
 
+class Parse(object):
+    """A class for representing a word parse, i.e. storing the word's stem, 
+    suffix, and signature, along with a score indicating the degree of 
+    confidence in this analysis.
+    """
+    def __init__(self, stem, suffix, signature, score=0):
+        self.stem = stem
+        self.suffix = suffix
+        self.signature = signature
+        self.score = score
+        
+    
 def build_parser(word_counts, signatures, stems, suffixes):
     """Build a parser, i.e. a dictionary whose keys are words and whose values
-    are themselves dictionaries (whose keys are parses, i.e. (stem, suffix) 
-    tuples, and whose values are probabilities).    
+    are ordered list of parses, i.e. objects with stem, suffix, signature and 
+    score attributes.    
     """
     
     # Go through signatures and associate each generated word with its parses...
     sig_num = 1
-    parser = collections.defaultdict(dict)
+    parses = collections.defaultdict(dict)
     for suffixes in signatures:
         for pair in itertools.product(signatures[suffixes], suffixes):
             word = "".join(pair)
-            parser[word][pair] = sig_num
+            parses[word][pair] = sig_num
         sig_num += 1
             
     # Go through each word in the corpus and increment stem and suffix count...
@@ -168,30 +180,39 @@ def build_parser(word_counts, signatures, stems, suffixes):
     suffix_count = dict()
     total_stem_count = total_suffix_count = 0
     for word, count in word_counts.items():
-        if len(parser[word]):
-            for stem, suffix in parser[word]:
+        if len(parses[word]):
+            for stem, suffix in parses[word]:
                 stem_count[stem] = stem_count.get(stem, 0) + count
                 suffix_count[suffix] = suffix_count.get(suffix, 0) + count
                 total_stem_count += count
                 total_suffix_count += count
         else:
-            parser[word][word, ""] = 0
+            parses[word][word, ""] = 0
             stem_count[word] = stem_count.get(word, 0) + count
             suffix_count[""] = suffix_count.get("", 0) + count
             total_stem_count += count
             total_suffix_count += count
 
-    # Compute score of each word parse and keep only best parse...
-    for word in parser:
-        scores = collections.defaultdict(dict)
+    # Compute score of each word parse and store ordered lists of parses...
+    parser = collections.defaultdict(list)
+    for word in parses:
+        scores = dict()
         total = 0
-        for stem, suffix in parser[word]:
+        for stem, suffix in parses[word]:
             score = (stem_count[stem]/total_stem_count)     \
                   * (suffix_count[suffix]/total_suffix_count)
-            scores[word][stem, suffix] = score
-        best_parse = sorted(scores[word], key=scores[word].get)[0]
-        parser[word] = {best_parse: parser[word][best_parse]}
-                        
+            scores[stem, suffix] = score
+        for stem, suffix in sorted(
+            scores, key=scores.get, reverse=True
+        ):
+            parser[word].append(
+                Parse(
+                    stem=stem,
+                    suffix=suffix,
+                    signature=parses[word][stem, suffix],
+                    score=scores[stem, suffix],
+                )
+            )
     return parser            
 
 def build_sig_tree(signatures):
