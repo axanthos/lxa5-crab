@@ -202,6 +202,7 @@ def build_parser(word_counts, signatures, stems, suffixes):
             score = (stem_count[stem]/total_stem_count)     \
                   * (suffix_count[suffix]/total_suffix_count)
             scores[stem, suffix] = score
+            total += score
         for stem, suffix in sorted(
             scores, key=scores.get, reverse=True
         ):
@@ -210,7 +211,7 @@ def build_parser(word_counts, signatures, stems, suffixes):
                     stem=stem,
                     suffix=suffix,
                     signature=parses[word][stem, suffix],
-                    score=scores[stem, suffix],
+                    score=scores[stem, suffix] / total,
                 )
             )
     return parser            
