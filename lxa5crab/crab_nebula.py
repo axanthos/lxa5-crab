@@ -1,7 +1,7 @@
 """Linguistica - Crab Nebula, py 2+3 standalone implementation"""
 
 # Py 2+3 compatibility imports...
-from __future__ import division
+from __future__ import division, print_function
 from io import open
 
 import os
@@ -19,8 +19,8 @@ __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
 
 # Parameters...
-INPUT_FILE = "../LICENSE"
-OUTPUT_FILE = "../signatures.txt"
+INPUT_FILE = os.path.normpath("../LICENSE")
+OUTPUT_FILE = os.path.normpath("../signatures.txt")
 ENCODING = "utf-8"
 MIN_STEM_LEN = 3
 
