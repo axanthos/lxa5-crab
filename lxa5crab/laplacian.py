@@ -11,13 +11,14 @@ import re
 import collections
 
 
-__version__ = "0.01"
+__version__ = "0.2"
 __author__ = "Aris Xanthos and John Goldsmith"
 __credits__ = ["John Goldsmith", "Aris Xanthos"]
 __license__ = "GPLv3"
 
 # Parameters...
-INPUT_FILE = Path("germinal.txt")
+#INPUT_FILE = Path("words_alpha.txt")
+INPUT_FILE = Path("browncorpus.txt")
 OUTPUT_FILE = Path("laplacian_output.txt")
 ENCODING = "utf-8"
 
@@ -68,42 +69,82 @@ def laplacian(words):
     output_lines = list()
     for word in sorted(words):
         output_lines.append("\n")
-        if len(word) >= 2: 
+        if len(word) >= 5:                                             
+            #print (word)
             l2r_laplacian = list()
+            l2r_laplacian.append(0)
+ 
             r2l_laplacian = list()
-            segmented_word = word[0]
-            for pos in range(1, len(word)):
-                l2r_laplacian.append(
-                      word_end_counts[word[:pos-1]]
-                    + word_end_counts[word[:pos+1]]
-                    - 2 * word_end_counts[word[:pos]]
-                )
-                r2l_laplacian.append(
-                    word_start_counts[word[pos-1:]]
-                    + word_start_counts[word[pos+1:]]
-                    - 2 * word_start_counts[word[pos:]]
-                )
-                if l2r_laplacian[-1] > 0 and r2l_laplacian[-1] > 0:
-                    segmented_word += "#"
-                segmented_word += word[pos]
+            r2l_laplacian.append(0)    
 
-            # Format output...
-            output_lines.append("{} => {}".format(word, segmented_word))
-            try:
-                max_len = math.ceil(
-                    1 + math.log(max(l2r_laplacian + l2r_laplacian), 10)
+            ct1 = list()
+            ct1.append(word_end_counts[word[0]])
+
+            ct2= list()
+            ct2.append(word_start_counts[word[1:]])   
+            ct2.append(word_start_counts[word[2:]])  
+ 
+            segmented_word1 = word[0] + word[1]  
+            segmented_word2 = word[0] + word[1]    
+ 
+            for pos in range(2,len(word)): #
+                l2r_laplacian.append(
+                              (-1 * word_end_counts[word[:pos-1]]) 
+                            + (3  * word_end_counts[word[:pos]])
+                            + (-3 * word_end_counts[word[:pos+1]])
+                            + (1 *  word_end_counts[word[:pos+2]] )
+                            
+                        )     
+              
+                r2l_laplacian.append(
+                              (-1 * word_start_counts[word[pos-1:]]) 
+                            + (3  * word_start_counts[word[pos:]])
+                            + (-3 * word_start_counts[word[pos+1:]])
+                            + (1 *  word_start_counts[word[pos+2:]] )
+                    
                 )
+   
+                if l2r_laplacian[-1] > 0:			 
+                    segmented_word1 += "["			 
+                if r2l_laplacian[-1] > 0:			 
+                    segmented_word2 += "]"			 
+
+                segmented_word1 += word[pos]	 
+                segmented_word2 += word[pos]         
+                ct1.append(word_end_counts[word[:pos]])
+                ct2.append(word_start_counts[word[pos:]])  
+      
+            ct1.append(word_end_counts[word[:-1]]) 
+           
+            output_lines.append("{} => {}".format(word, segmented_word1))
+            output_lines.append("{} => {}".format(word, segmented_word2))
+            try:
+                #max_len = math.ceil(
+                #    1 + math.log(max(l2r_laplacian + l2r_laplacian), 10)
+                #)
+                max_len = 7
             except ValueError:
                 max_len = 1
-            if min(l2r_laplacian + l2r_laplacian) < 0:
-                max_len += 1
-            header_cell_format = "%-{}s".format(max_len+1)
+            #if min(l2r_laplacian + l2r_laplacian) < 0:
+            #    max_len += 1
+            header_cell_format = "%-{}s".format(max_len)
             header_row_format = "%-4s" + (header_cell_format * len(word))
-            cell_format = "%-{}i".format(max_len+1)
-            row_format = "%-4s" + (cell_format * (len(word)-1))
+            cell_format = "%-{}i".format(max_len)
+            row_format_0 = "%-4s" + (cell_format * (len(word)))            
+            row_format_m1 = "%-4s" + (cell_format * (len(word)-1))
+            row_format_m2 = "%-4s" + (cell_format * (len(word)-2))  ##
+            row_format_m3 = "%-4s" + (cell_format * (len(word)-3))  ##
+            row_format_m4 = "%-4s" + (cell_format * (len(word)-4))  ##
+            row_format_p1 = "%-4s" + (cell_format * (len(word)+1))  ##
             output_lines.append(header_row_format % tuple([""] + list(word)))
-            output_lines.append(row_format % tuple(["l2r"] + l2r_laplacian))
-            output_lines.append(row_format % tuple(["r2l"] + r2l_laplacian))
+ 
+            output_lines.append(row_format_0 % tuple(["ct1"] + ct1)) ##
+         
+            output_lines.append(row_format_m1 % tuple(["l2r"] + l2r_laplacian))   
+            output_lines.append(" " )
+            #print (word, r2l_laplacian)
+            output_lines.append(row_format_0 % tuple(["ct2"] + ct2))  ##
+            output_lines.append(row_format_m1 % tuple(["r2l"] + r2l_laplacian))   ## format2, longer row.
         else:
             output_lines.append("{0} => {0}".format(word))
             
