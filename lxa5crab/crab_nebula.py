@@ -125,7 +125,12 @@ def find_signatures(word_counts):
     for stems in signatures.values():
         known_stems = known_stems.union(stems)
 
-    return signatures, stems, suffixes
+    # Get list of known suffixes from signatures...
+    known_stems = set()
+    for suffixes in signatures:
+        known_suffixes = known_suffixes.union(suffixes)
+
+    return signatures, known_stems, known_suffixes
 
 def find_protostems(word_counts):
     """Find potential stems"""
