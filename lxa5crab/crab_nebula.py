@@ -75,7 +75,7 @@ def find_signatures(word_counts):
     # List all possible continuations of each protostem...
     continuations = collections.defaultdict(list)
     for word in word_counts.keys():
-        for protostem in protostems:
+        for protostem in protostems.keys():
             if word.startswith(protostem):
                 continuations[protostem].append(word[len(protostem):])
 
@@ -129,7 +129,7 @@ def find_signatures(word_counts):
 
 def find_protostems(word_counts):
     """Find potential stems"""
-    protostems = set()
+    protostems = collections.Counter()
 
     # For each pair of successive words (in alphabetical order)...
     sorted_words = sorted(word_counts.keys())
@@ -138,7 +138,7 @@ def find_protostems(word_counts):
         # Add longest common prefix to protostems (if long enough)...
         protostem = os.path.commonprefix(sorted_words[idx:idx+2])
         if len(protostem) >= MIN_STEM_LEN:
-            protostems.add(protostem)
+            protostems[protostem] += 1
 
     if len(protostems) == 0:
         message = "Unable to find any stems in data."
